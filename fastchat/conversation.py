@@ -778,6 +778,19 @@ register_conv_template(
         stop_str="<|end|>",
     )
 )
+# H4 default_v2 template template
+# reference: https://huggingface.co/spaces/HuggingFaceH4/starchat-playground/blob/main/dialogues.py
+register_conv_template(
+    Conversation(
+        name="h4_default_v2",
+        system_template="<|system|>\n{system_message}",
+        roles=("<|user|>", "<|assistant|>"),
+        sep_style=SeparatorStyle.CHATML,
+        sep="<|endoftext|>",
+        stop_token_ids=[0, 49155],
+        stop_str="<|end|>",
+    )
+)
 
 # Baichuan-13B-Chat template
 register_conv_template(
