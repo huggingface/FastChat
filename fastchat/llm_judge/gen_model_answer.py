@@ -19,6 +19,7 @@ from fastchat.model import load_model, get_conversation_template
 
 def run_eval(
     model_path,
+    model_revision,
     model_id,
     question_file,
     question_begin,
@@ -51,6 +52,7 @@ def run_eval(
         ans_handles.append(
             get_answers_func(
                 model_path,
+                model_revision,
                 model_id,
                 questions[i : i + chunk_size],
                 answer_file,
@@ -68,6 +70,7 @@ def run_eval(
 @torch.inference_mode()
 def get_model_answers(
     model_path,
+    model_revision,
     model_id,
     questions,
     answer_file,
@@ -84,6 +87,7 @@ def get_model_answers(
         load_8bit=False,
         cpu_offloading=False,
         debug=False,
+        revision=model_revision
     )
 
     for question in tqdm(questions):
@@ -192,6 +196,12 @@ if __name__ == "__main__":
         required=True,
         help="The path to the weights. This can be a local folder or a Hugging Face repo ID.",
     )
+    parser.add_argument(
+        "--model-revision",
+        type=str,
+        default="main",
+        help="The revision of the model on the huggingface hub, default='main'",
+    )
     parser.add_argument("--model-id", type=str, required=True)
     parser.add_argument(
         "--bench-name",
@@ -251,6 +261,8 @@ if __name__ == "__main__":
 
     run_eval(
         args.model_path,
+        args.model_revision,
+        #args.model_trust_remote_code,
         args.model_id,
         question_file,
         args.question_begin,
