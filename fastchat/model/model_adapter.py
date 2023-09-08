@@ -157,6 +157,7 @@ def load_model(
     awq_config: Optional[AWQConfig] = None,
     revision: str = "main",
     debug: bool = False,
+    trust_remote_code=False,
 ):
     """Load a model from Hugging Face."""
     # get model adapter
@@ -231,6 +232,7 @@ def load_model(
                 device=device,
                 torch_dtype=kwargs["torch_dtype"],
                 revision=revision,
+                trust_remote_code=trust_remote_code
             )
             if debug:
                 print(model)
@@ -273,6 +275,7 @@ def load_model(
             model.to(device)
         return model, tokenizer
     kwargs["revision"] = revision
+    kwargs["trust_remote_code"] = trust_remote_code
 
     # Load model
     model, tokenizer = adapter.load_model(model_path, kwargs)
@@ -1101,7 +1104,6 @@ class FalconAdapter(BaseModelAdapter):
         model = AutoModelForCausalLM.from_pretrained(
             model_path,
             low_cpu_mem_usage=True,
-            trust_remote_code=True,
             **from_pretrained_kwargs,
         )
         # In Falcon tokenizer config and special config there is not any pad token
