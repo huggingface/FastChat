@@ -23,8 +23,10 @@ from transformers import (
     LlamaTokenizer,
     LlamaForCausalLM,
     T5Tokenizer,
+    BitsAndBytesConfig
 )
-
+from peft import PeftConfig, PeftModel
+from huggingface_hub import list_repo_files
 from fastchat.constants import CPU_ISA
 from fastchat.modules.gptq import GptqConfig, load_gptq_quantized
 from fastchat.modules.awq import AWQConfig, load_awq_quantized
@@ -46,6 +48,10 @@ from fastchat.utils import get_gpu_memory
 peft_share_base_weights = (
     os.environ.get("PEFT_SHARE_BASE_WEIGHTS", "false").lower() == "true"
 )
+
+def is_adapter_model(model_name_or_path: str, revision: str = "main") -> bool:
+    repo_files = list_repo_files(model_name_or_path, revision=revision)
+    return "adapter_model.bin" in repo_files
 
 
 class BaseModelAdapter:
@@ -70,10 +76,25 @@ class BaseModelAdapter:
                 model_path, use_fast=False, revision=revision, trust_remote_code=True
             )
         try:
-            model = AutoModelForCausalLM.from_pretrained(
+            if is_adapter_model(model_path, revision=revision):
+                print("Loading adapter model")
+                config = PeftConfig.from_pretrained(model_path, revision=revision)
+                base_model = AutoModelForCausalLM.from_pretrained(
+                    config.base_model_name_or_path,
+                    return_dict=True,
+                    quantization_config=BitsAndBytesConfig(load_in_8bit=True),
+                    #**from_pretrained_kwargs,
+                )
+                base_model.resize_token_embeddings(len(tokenizer))
+                model = PeftModel.from_pretrained(base_model, model_path, revision=revision)
+            else:
+                model = AutoModelForCausalLM.from_pretrained(
                 model_path, low_cpu_mem_usage=True, **from_pretrained_kwargs
             )
         except NameError:
+            
+            assert not is_adapter_model(model_path, revision=revision), "Load adapter models not implemented for AutoModel"
+            
             model = AutoModel.from_pretrained(
                 model_path, low_cpu_mem_usage=True, **from_pretrained_kwargs
             )
