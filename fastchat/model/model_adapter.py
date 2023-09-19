@@ -76,25 +76,10 @@ class BaseModelAdapter:
                 model_path, use_fast=False, revision=revision, trust_remote_code=True
             )
         try:
-            if is_adapter_model(model_path, revision=revision):
-                print("Loading adapter model")
-                config = PeftConfig.from_pretrained(model_path, revision=revision)
-                base_model = AutoModelForCausalLM.from_pretrained(
-                    config.base_model_name_or_path,
-                    return_dict=True,
-                    quantization_config=BitsAndBytesConfig(load_in_8bit=True),
-                    #**from_pretrained_kwargs,
-                )
-                base_model.resize_token_embeddings(len(tokenizer))
-                model = PeftModel.from_pretrained(base_model, model_path, revision=revision)
-            else:
-                model = AutoModelForCausalLM.from_pretrained(
+            model = AutoModelForCausalLM.from_pretrained(
                 model_path, low_cpu_mem_usage=True, **from_pretrained_kwargs
             )
         except NameError:
-            
-            assert not is_adapter_model(model_path, revision=revision), "Load adapter models not implemented for AutoModel"
-            
             model = AutoModel.from_pretrained(
                 model_path, low_cpu_mem_usage=True, **from_pretrained_kwargs
             )
@@ -178,7 +163,8 @@ def load_model(
     awq_config: Optional[AWQConfig] = None,
     revision: str = "main",
     debug: bool = False,
-    trust_remote_code=False,
+    trust_remote_code: bool=False,
+    base_model_revision: str ="main"
 ):
     """Load a model from Hugging Face."""
     # get model adapter
@@ -297,6 +283,7 @@ def load_model(
         return model, tokenizer
     kwargs["revision"] = revision
     kwargs["trust_remote_code"] = trust_remote_code
+    kwargs["base_model_revision"] = base_model_revision
 
     # Load model
     model, tokenizer = adapter.load_model(model_path, kwargs)
@@ -483,8 +470,8 @@ class PeftModelAdapter:
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         """Loads the base model then the (peft) adapter weights"""
         from peft import PeftConfig, PeftModel
-
-        config = PeftConfig.from_pretrained(model_path)
+        revision = from_pretrained_kwargs.get("revision", "main")
+        config = PeftConfig.from_pretrained(model_path, revision=revision)
         base_model_path = config.base_model_name_or_path
         if "peft" in base_model_path:
             raise ValueError(
@@ -516,17 +503,21 @@ class PeftModelAdapter:
                 # Super important: make sure we use model_path as the
                 # `adapter_name`.
                 model = PeftModel.from_pretrained(
-                    base_model, model_path, adapter_name=model_path
+                    base_model, model_path, adapter_name=model_path, revision=revision
                 )
                 peft_model_cache[base_model_path] = (model, tokenizer)
             return model, tokenizer
 
         # In the normal case, load up the base model weights again.
         base_adapter = get_model_adapter(base_model_path)
+        base_model_from_pretrained_kwargs = {
+            "revision": from_pretrained_kwargs.get("base_model_revision", "main"),
+            "trust_remote_code": from_pretrained_kwargs.get("trust_remote_code", False)
+        }
         base_model, tokenizer = base_adapter.load_model(
-            base_model_path, from_pretrained_kwargs
+            base_model_path, base_model_from_pretrained_kwargs, 
         )
-        model = PeftModel.from_pretrained(base_model, model_path)
+        model = PeftModel.from_pretrained(base_model, model_path, revision=revision)
         return model, tokenizer
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
@@ -1120,8 +1111,10 @@ class FalconAdapter(BaseModelAdapter):
 
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         revision = from_pretrained_kwargs.get("revision", "main")
+
+        print("FalconAdapter", model_path, from_pretrained_kwargs)
         # Strongly suggest using bf16, which is recommended by the author of Falcon
-        tokenizer = AutoTokenizer.from_pretrained(model_path, revision=revision)
+        tokenizer = AutoTokenizer.from_pretrained(model_path, revision=revision, trust_remote_code=True)
         model = AutoModelForCausalLM.from_pretrained(
             model_path,
             low_cpu_mem_usage=True,
