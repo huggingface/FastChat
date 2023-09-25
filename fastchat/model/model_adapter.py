@@ -42,6 +42,7 @@ from fastchat.model.monkey_patch_non_inplace import (
     replace_llama_attn_with_non_inplace_operations,
 )
 from fastchat.utils import get_gpu_memory
+from huggingface_hub.utils._validators import HFValidationError
 
 # Check an environment variable to check if we should be sharing Peft model
 # weights.  When false we treat all Peft models as separate.
@@ -50,7 +51,11 @@ peft_share_base_weights = (
 )
 
 def is_adapter_model(model_name_or_path: str, revision: str = "main") -> bool:
-    repo_files = list_repo_files(model_name_or_path, revision=revision)
+    try:
+        repo_files = list_repo_files(model_name_or_path, revision=revision)
+    except HFValidationError:
+        # check local files
+        repo_files = os.listdir(model_name_or_path)
     return "adapter_model.bin" in repo_files
 
 
