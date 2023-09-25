@@ -173,7 +173,7 @@ def load_model(
 ):
     """Load a model from Hugging Face."""
     # get model adapter
-    adapter = get_model_adapter(model_path)
+    adapter = PeftModelAdapter() if is_adapter_model(model_path, revision=revision) else get_model_adapter(model_path) 
 
     # Handle device mapping
     cpu_offloading = raise_warning_for_incompatible_cpu_offloading_configuration(
@@ -1118,7 +1118,6 @@ class FalconAdapter(BaseModelAdapter):
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         revision = from_pretrained_kwargs.get("revision", "main")
 
-        print("FalconAdapter", model_path, from_pretrained_kwargs)
         # Strongly suggest using bf16, which is recommended by the author of Falcon
         tokenizer = AutoTokenizer.from_pretrained(model_path, revision=revision, trust_remote_code=True)
         model = AutoModelForCausalLM.from_pretrained(
