@@ -114,8 +114,10 @@ def register_model_adapter(cls):
 
 
 @cache
-def get_model_adapter(model_path: str) -> BaseModelAdapter:
+def get_model_adapter(model_path: str, revision: str = "main") -> BaseModelAdapter:
     """Get a model adapter for a model_path."""
+    if is_adapter_model(model_path, revision=revision):
+        return PeftModelAdapter()
     model_path_basename = os.path.basename(os.path.normpath(model_path))
 
     # Try the basename of model_path at first
@@ -173,7 +175,8 @@ def load_model(
 ):
     """Load a model from Hugging Face."""
     # get model adapter
-    adapter = PeftModelAdapter() if is_adapter_model(model_path, revision=revision) else get_model_adapter(model_path) 
+    adapter = get_model_adapter(model_path, revision=revision)
+    print(f"Using model adapter: {adapter.__class__.__name__}")
 
     # Handle device mapping
     cpu_offloading = raise_warning_for_incompatible_cpu_offloading_configuration(
@@ -1261,7 +1264,7 @@ class Llama2Adapter(BaseModelAdapter):
     """The model adapter for llama-2"""
 
     def match(self, model_path: str):
-        return "llama-2" in model_path.lower()
+        return "llama-2" or "llama2" in model_path.lower()
 
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         model, tokenizer = super().load_model(model_path, from_pretrained_kwargs)
@@ -1270,7 +1273,7 @@ class Llama2Adapter(BaseModelAdapter):
         return model, tokenizer
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
-        return get_conv_template("llama-2")
+        return get_conv_template("h4_default_v2")
 
 
 class CuteGPTAdapter(BaseModelAdapter):
