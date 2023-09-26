@@ -288,7 +288,7 @@ def load_model(
         return model, tokenizer
     kwargs["revision"] = revision
     kwargs["trust_remote_code"] = trust_remote_code
-    if is_adapter_model(model_path, revision=base_model_revision) is True:
+    if is_adapter_model(model_path, revision=revision) is True:
         kwargs["base_model_revision"] = base_model_revision
 
     # Load model
