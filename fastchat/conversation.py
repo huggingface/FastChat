@@ -792,6 +792,19 @@ register_conv_template(
     )
 )
 
+# H4 default_v3 template template for llama / mistral models
+register_conv_template(
+    Conversation(
+        name="h4_default_v3",
+        system_template="<|system|>\n{system_message}",
+        roles=("<|user|>", "<|assistant|>"),
+        sep_style=SeparatorStyle.CHATML,
+        sep="</s>",
+        stop_token_ids=[0, 49155],
+        stop_str="</s>",
+    )
+)
+
 # Baichuan-13B-Chat template
 register_conv_template(
     # source: https://huggingface.co/baichuan-inc/Baichuan-13B-Chat/blob/19ef51ba5bad8935b03acd20ff04a269210983bc/modeling_baichuan.py#L555
