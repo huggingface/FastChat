@@ -800,7 +800,7 @@ register_conv_template(
         roles=("<|user|>", "<|assistant|>"),
         sep_style=SeparatorStyle.CHATML,
         sep="</s>",
-        stop_token_ids=[0, 49155],
+        stop_token_ids=[2],
         stop_str="</s>",
     )
 )
