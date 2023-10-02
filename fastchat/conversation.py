@@ -787,7 +787,7 @@ register_conv_template(
         roles=("<|user|>", "<|assistant|>"),
         sep_style=SeparatorStyle.CHATML,
         sep="<|endoftext|>",
-        stop_token_ids=[0, 49155],
+        stop_token_ids=[0, 11], # Starcoder EOS ID = 0, Falcon EOS ID = 11
         stop_str="<|endoftext|>",
     )
 )
