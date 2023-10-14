@@ -1676,6 +1676,7 @@ register_model_adapter(VigogneChatAdapter)
 register_model_adapter(OpenLLaMaOpenInstructAdapter)
 register_model_adapter(ReaLMAdapter)
 register_model_adapter(CodeLlamaAdapter)
+register_model_adapter(MistralAdapter)
 
 # After all adapters, try the default base adapter.
 register_model_adapter(BaseModelAdapter)
