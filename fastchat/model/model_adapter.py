@@ -177,7 +177,7 @@ def load_model(
     """Load a model from Hugging Face."""
     # get model adapter
     adapter = get_model_adapter(model_path, revision=revision)
-    print(f"Using model adapter: {adapter.__class__.__name__}")
+    print(f"Using model adapter: {adapter.__class__.__name__} for model path {model_path} and revision {revision}")
 
     # Handle device mapping
     cpu_offloading = raise_warning_for_incompatible_cpu_offloading_configuration(
@@ -1265,7 +1265,7 @@ class Llama2Adapter(BaseModelAdapter):
     """The model adapter for llama-2"""
 
     def match(self, model_path: str):
-        return "llama-2" or "llama2" in model_path.lower()
+        return "llama-2" in model_path.lower() or "llama2" in model_path.lower()
 
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         model, tokenizer = super().load_model(model_path, from_pretrained_kwargs)
