@@ -23,8 +23,10 @@ from transformers import (
     LlamaTokenizer,
     LlamaForCausalLM,
     T5Tokenizer,
+    BitsAndBytesConfig
 )
-
+from peft import PeftConfig, PeftModel
+from huggingface_hub import list_repo_files
 from fastchat.constants import CPU_ISA
 from fastchat.modules.gptq import GptqConfig, load_gptq_quantized
 from fastchat.modules.awq import AWQConfig, load_awq_quantized
@@ -40,12 +42,21 @@ from fastchat.model.monkey_patch_non_inplace import (
     replace_llama_attn_with_non_inplace_operations,
 )
 from fastchat.utils import get_gpu_memory
+from huggingface_hub.utils._validators import HFValidationError
 
 # Check an environment variable to check if we should be sharing Peft model
 # weights.  When false we treat all Peft models as separate.
 peft_share_base_weights = (
     os.environ.get("PEFT_SHARE_BASE_WEIGHTS", "false").lower() == "true"
 )
+
+def is_adapter_model(model_name_or_path: str, revision: str = "main") -> bool:
+    try:
+        repo_files = list_repo_files(model_name_or_path, revision=revision)
+    except HFValidationError:
+        # check local files
+        repo_files = os.listdir(model_name_or_path)
+    return "adapter_model.bin" in repo_files
 
 
 class BaseModelAdapter:
@@ -103,8 +114,11 @@ def register_model_adapter(cls):
 
 
 @cache
-def get_model_adapter(model_path: str) -> BaseModelAdapter:
+def get_model_adapter(model_path: str, revision: str = "main") -> BaseModelAdapter:
     """Get a model adapter for a model_path."""
+    if model_path not in ["gpt-4", "gpt-3.5-turbo", "claude-2", "claude-instant-1"] and is_adapter_model(model_path, revision=revision):
+        return PeftModelAdapter()
+    
     model_path_basename = os.path.basename(os.path.normpath(model_path))
 
     # Try the basename of model_path at first
@@ -157,10 +171,13 @@ def load_model(
     awq_config: Optional[AWQConfig] = None,
     revision: str = "main",
     debug: bool = False,
+    trust_remote_code: bool=False,
+    base_model_revision: str ="main"
 ):
     """Load a model from Hugging Face."""
     # get model adapter
-    adapter = get_model_adapter(model_path)
+    adapter = get_model_adapter(model_path, revision=revision)
+    print(f"Using model adapter: {adapter.__class__.__name__} for model path {model_path} and revision {revision}")
 
     # Handle device mapping
     cpu_offloading = raise_warning_for_incompatible_cpu_offloading_configuration(
@@ -231,6 +248,7 @@ def load_model(
                 device=device,
                 torch_dtype=kwargs["torch_dtype"],
                 revision=revision,
+                trust_remote_code=trust_remote_code
             )
             if debug:
                 print(model)
@@ -273,6 +291,9 @@ def load_model(
             model.to(device)
         return model, tokenizer
     kwargs["revision"] = revision
+    kwargs["trust_remote_code"] = trust_remote_code
+    if is_adapter_model(model_path, revision=revision) is True:
+        kwargs["base_model_revision"] = base_model_revision
 
     # Load model
     model, tokenizer = adapter.load_model(model_path, kwargs)
@@ -459,8 +480,8 @@ class PeftModelAdapter:
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         """Loads the base model then the (peft) adapter weights"""
         from peft import PeftConfig, PeftModel
-
-        config = PeftConfig.from_pretrained(model_path)
+        revision = from_pretrained_kwargs.get("revision", "main")
+        config = PeftConfig.from_pretrained(model_path, revision=revision)
         base_model_path = config.base_model_name_or_path
         if "peft" in base_model_path:
             raise ValueError(
@@ -492,17 +513,21 @@ class PeftModelAdapter:
                 # Super important: make sure we use model_path as the
                 # `adapter_name`.
                 model = PeftModel.from_pretrained(
-                    base_model, model_path, adapter_name=model_path
+                    base_model, model_path, adapter_name=model_path, revision=revision
                 )
                 peft_model_cache[base_model_path] = (model, tokenizer)
             return model, tokenizer
 
         # In the normal case, load up the base model weights again.
         base_adapter = get_model_adapter(base_model_path)
+        base_model_from_pretrained_kwargs = {
+            "revision": from_pretrained_kwargs.get("base_model_revision", "main"),
+            "trust_remote_code": from_pretrained_kwargs.get("trust_remote_code", False)
+        }
         base_model, tokenizer = base_adapter.load_model(
-            base_model_path, from_pretrained_kwargs
+            base_model_path, base_model_from_pretrained_kwargs, 
         )
-        model = PeftModel.from_pretrained(base_model, model_path)
+        model = PeftModel.from_pretrained(base_model, model_path, revision=revision)
         return model, tokenizer
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
@@ -1096,12 +1121,12 @@ class FalconAdapter(BaseModelAdapter):
 
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         revision = from_pretrained_kwargs.get("revision", "main")
+
         # Strongly suggest using bf16, which is recommended by the author of Falcon
-        tokenizer = AutoTokenizer.from_pretrained(model_path, revision=revision)
+        tokenizer = AutoTokenizer.from_pretrained(model_path, revision=revision, trust_remote_code=True)
         model = AutoModelForCausalLM.from_pretrained(
             model_path,
             low_cpu_mem_usage=True,
-            trust_remote_code=True,
             **from_pretrained_kwargs,
         )
         # In Falcon tokenizer config and special config there is not any pad token
@@ -1110,7 +1135,7 @@ class FalconAdapter(BaseModelAdapter):
         return model, tokenizer
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
-        return get_conv_template("falcon")
+        return get_conv_template("h4_default_v2")
 
 
 class TigerBotAdapter(BaseModelAdapter):
@@ -1240,7 +1265,7 @@ class Llama2Adapter(BaseModelAdapter):
     """The model adapter for llama-2"""
 
     def match(self, model_path: str):
-        return "llama-2" in model_path.lower()
+        return "llama-2" in model_path.lower() or "llama2" in model_path.lower()
 
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         model, tokenizer = super().load_model(model_path, from_pretrained_kwargs)
@@ -1249,7 +1274,22 @@ class Llama2Adapter(BaseModelAdapter):
         return model, tokenizer
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
-        return get_conv_template("llama-2")
+        return get_conv_template("h4_default_v3")
+
+class MistralAdapter(BaseModelAdapter):
+    """The model adapter for mistral"""
+
+    def match(self, model_path: str):
+        return "mistral" in model_path.lower()
+
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        model, tokenizer = super().load_model(model_path, from_pretrained_kwargs)
+        model.config.eos_token_id = tokenizer.eos_token_id
+        model.config.pad_token_id = tokenizer.pad_token_id
+        return model, tokenizer
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        return get_conv_template("h4_default_v3")
 
 
 class CuteGPTAdapter(BaseModelAdapter):
@@ -1636,6 +1676,7 @@ register_model_adapter(VigogneChatAdapter)
 register_model_adapter(OpenLLaMaOpenInstructAdapter)
 register_model_adapter(ReaLMAdapter)
 register_model_adapter(CodeLlamaAdapter)
+register_model_adapter(MistralAdapter)
 
 # After all adapters, try the default base adapter.
 register_model_adapter(BaseModelAdapter)
