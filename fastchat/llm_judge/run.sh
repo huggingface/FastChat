@@ -7,7 +7,7 @@ MT_BENCH_ID=$2
 [ -z "$4" ] && DTYPE="float16" || DTYPE=$4
 
 # Generate answer
-python gen_model_answer.py --model-path $HUB_MODEL_ID --model-id $MT_BENCH_ID --dtype $DTYPE
+python gen_model_answer.py --model-path $HUB_MODEL_ID --model-revision $REVISION --model-id $MT_BENCH_ID --dtype $DTYPE
 
 # Judge!
 python gen_judgment.py --model-list $MT_BENCH_ID
