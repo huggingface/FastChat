@@ -179,6 +179,7 @@ def load_model(
     """Load a model from Hugging Face."""
     # get model adapter
     adapter = get_model_adapter(model_path)
+    print(f"Using model adapter: {adapter.__class__.__name__} for model path {model_path} and revision {revision}")
 
     # Handle device mapping
     cpu_offloading = raise_warning_for_incompatible_cpu_offloading_configuration(
@@ -1861,6 +1862,15 @@ class ZephyrAdapter(BaseModelAdapter):
     def get_default_conv_template(self, model_path: str) -> Conversation:
         return get_conv_template("zephyr")
 
+class H4MistralAdapter(BaseModelAdapter):
+    """The model adapter for H4 Mistral models"""
+
+    def match(self, model_path: str):
+        return "HuggingFaceH4/mistral" in model_path.lower()
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        return get_conv_template("zephyr")
+
 
 class XwinLMAdapter(BaseModelAdapter):
     """The model adapter for Xwin-LM V0.1 and V0.2 series of models(e.g., Xwin-LM/Xwin-LM-70B-V0.1)"""
@@ -1990,6 +2000,7 @@ register_model_adapter(Llama2ChangAdapter)
 register_model_adapter(ZephyrAdapter)
 register_model_adapter(XwinLMAdapter)
 register_model_adapter(LemurAdapter)
+register_model_adapter(H4MistralAdapter)
 register_model_adapter(PygmalionAdapter)
 register_model_adapter(MicrosoftOrcaAdapter)
 register_model_adapter(YiAdapter)
