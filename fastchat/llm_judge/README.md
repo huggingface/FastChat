@@ -87,6 +87,20 @@ The judgments will be saved to `data/mt_bench/model_judgment/gpt-4_single.jsonl`
 
 ---
 
+#### Run all steps together
+
+We provide a script that runs all steps together as follows:
+
+```shell
+run.sh {HUB_MODEL_ID} {HUB_MODEL_REVISION} {DTYPE} {MT_BENCH_ID}
+```
+
+For example, to evaluate `zephyr-7b-beta` you can run:
+
+```shell
+run.sh 
+```
+
 ### Other grading options
 Besides score-based single-answer grading, we also support two additional grading options based on win rates:
 - `pariwise-baseline`: run pairwise comparison against a baseline model.
