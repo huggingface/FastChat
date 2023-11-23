@@ -36,6 +36,9 @@ IGNORE_TOKEN_ID = LabelSmoother.ignore_index
 @dataclass
 class ModelArguments:
     model_name_or_path: Optional[str] = field(default="facebook/opt-125m")
+    padding_side: str = field(
+        default="right", metadata={"help": "The padding side in tokenizer"}
+    )
 
 
 @dataclass
@@ -69,13 +72,15 @@ def rank0_print(*args):
         print(*args)
 
 
-def safe_save_model_for_hf_trainer(trainer: transformers.Trainer, output_dir: str):
-    """Collects the state dict and dump to disk."""
-    state_dict = trainer.model.state_dict()
-    if trainer.args.should_save:
-        cpu_state_dict = {key: value.cpu() for key, value in state_dict.items()}
-        del state_dict
-        trainer._save(output_dir, state_dict=cpu_state_dict)  # noqa
+def trainer_save_model_safe(trainer: transformers.Trainer):
+    from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
+    from torch.distributed.fsdp import StateDictType, FullStateDictConfig
+
+    save_policy = FullStateDictConfig(offload_to_cpu=True, rank0_only=True)
+    with FSDP.state_dict_type(
+        trainer.model, StateDictType.FULL_STATE_DICT, save_policy
+    ):
+        trainer.save_model()
 
 
 def preprocess(
@@ -128,12 +133,20 @@ def preprocess(
             if len(parts) != 2:
                 break
             parts[0] += sep
-            # "-2" is hardcoded for the LLaMA tokenizer to make the offset correct.
+            # "-2" is hardcoded for the Llama tokenizer to make the offset correct.
             instruction_len = len(tokenizer(parts[0]).input_ids) - 2
+
+            if i != 0 and not tokenizer.legacy:
+                # The legacy and non-legacy modes handle special tokens differently
+                instruction_len -= 1
 
             # Ignore the user instructions
             target[cur_len : cur_len + instruction_len] = IGNORE_TOKEN_ID
             cur_len += turn_len
+
+            if i != 0 and not tokenizer.legacy:
+                # The legacy and non-legacy modes handle special tokens differently
+                cur_len -= 1
 
         target[cur_len:] = IGNORE_TOKEN_ID
 
@@ -141,13 +154,14 @@ def preprocess(
             z = target.clone()
             z = torch.where(z == IGNORE_TOKEN_ID, tokenizer.unk_token_id, z)
             rank0_print(tokenizer.decode(z))
+            exit()
 
         if cur_len < tokenizer.model_max_length:
             if cur_len != total_len:
                 target[:] = IGNORE_TOKEN_ID
                 rank0_print(
                     f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
-                    f" (ignored)"
+                    f" #turn = {len(turns) - 1}. (ignored)"
                 )
 
     return dict(
@@ -263,10 +277,12 @@ def train():
         model_args.model_name_or_path,
         cache_dir=training_args.cache_dir,
         model_max_length=training_args.model_max_length,
-        padding_side="right",
+        padding_side=model_args.padding_side,
         use_fast=False,
     )
-    tokenizer.pad_token = tokenizer.unk_token
+
+    if tokenizer.pad_token != tokenizer.unk_token:
+        tokenizer.pad_token = tokenizer.unk_token
 
     # Load data
     data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
@@ -279,9 +295,14 @@ def train():
         trainer.train(resume_from_checkpoint=True)
     else:
         trainer.train()
+
+    # Save model
     model.config.use_cache = True
     trainer.save_state()
-    safe_save_model_for_hf_trainer(trainer=trainer, output_dir=training_args.output_dir)
+    if trainer.is_deepspeed_enabled:
+        trainer.save_model()
+    else:
+        trainer_save_model_safe(trainer)
 
 
 if __name__ == "__main__":
