@@ -92,7 +92,7 @@ The judgments will be saved to `data/mt_bench/model_judgment/gpt-4_single.jsonl`
 We provide a script that runs all steps together as follows:
 
 ```shell
-run.sh {HUB_MODEL_ID} {HUB_MODEL_REVISION} {DTYPE} {MT_BENCH_ID}
+run.sh {HUB_MODEL_ID} {MT_BENCH_ID} {HUB_MODEL_REVISION} {DTYPE}
 ```
 
 For example, to evaluate `zephyr-7b-beta` you can run:

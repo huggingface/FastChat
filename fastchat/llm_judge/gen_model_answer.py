@@ -62,6 +62,7 @@ def run_eval(
                 num_gpus_per_model,
                 max_gpu_memory,
                 dtype=dtype,
+                revision=revision,
             )
         )
 
@@ -263,7 +264,7 @@ if __name__ == "__main__":
         default=None,
     )
     parser.add_argument(
-        "--model-revision",
+        "--revision",
         type=str,
         default="main",
         help="The revision of the model on the Hugging Face Hub.",
@@ -297,6 +298,7 @@ if __name__ == "__main__":
         num_gpus_total=args.num_gpus_total,
         max_gpu_memory=args.max_gpu_memory,
         dtype=str_to_torch_dtype(args.dtype),
+        revision=args.revision,
     )
 
     reorg_answer_file(answer_file)
