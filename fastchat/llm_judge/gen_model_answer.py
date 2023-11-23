@@ -31,6 +31,7 @@ def run_eval(
     num_gpus_total,
     max_gpu_memory,
     dtype,
+    revision,
 ):
     questions = load_questions(question_file, question_begin, question_end)
     # random shuffle the questions to balance the loading
@@ -79,9 +80,11 @@ def get_model_answers(
     num_gpus_per_model,
     max_gpu_memory,
     dtype,
+    revision,
 ):
     model, tokenizer = load_model(
         model_path,
+        revision=revision,
         device="cuda",
         num_gpus=num_gpus_per_model,
         max_gpu_memory=max_gpu_memory,
@@ -258,6 +261,12 @@ if __name__ == "__main__":
         choices=["float32", "float16", "bfloat16"],
         help="Override the default dtype. If not set, it will use float16 on GPU and float32 on CPU.",
         default=None,
+    )
+    parser.add_argument(
+        "--model-revision",
+        type=str,
+        default="main",
+        help="The revision of the model on the Hugging Face Hub.",
     )
 
     args = parser.parse_args()
