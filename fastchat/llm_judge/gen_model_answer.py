@@ -32,6 +32,7 @@ def run_eval(
     max_gpu_memory,
     dtype,
     revision,
+    base_model_revision,
 ):
     questions = load_questions(question_file, question_begin, question_end)
     # random shuffle the questions to balance the loading
@@ -63,6 +64,7 @@ def run_eval(
                 max_gpu_memory,
                 dtype=dtype,
                 revision=revision,
+                base_model_revision=base_model_revision,
             )
         )
 
@@ -82,10 +84,12 @@ def get_model_answers(
     max_gpu_memory,
     dtype,
     revision,
+    base_model_revision,
 ):
     model, tokenizer = load_model(
         model_path,
         revision=revision,
+        base_model_revision=base_model_revision,
         device="cuda",
         num_gpus=num_gpus_per_model,
         max_gpu_memory=max_gpu_memory,
@@ -104,7 +108,7 @@ def get_model_answers(
         choices = []
         for i in range(num_choices):
             torch.manual_seed(i)
-            conv = get_conversation_template(model_id)
+            conv = get_conversation_template(model_path)
             turns = []
             for j in range(len(question["turns"])):
                 qs = question["turns"][j]
@@ -121,7 +125,7 @@ def get_model_answers(
                 # some models may error out when generating long outputs
                 try:
                     output_ids = model.generate(
-                        torch.as_tensor(input_ids).cuda(),
+                        inputs=torch.as_tensor(input_ids).cuda(),
                         do_sample=do_sample,
                         temperature=temperature,
                         max_new_tokens=max_new_token,
@@ -269,6 +273,12 @@ if __name__ == "__main__":
         default="main",
         help="The revision of the model on the Hugging Face Hub.",
     )
+    parser.add_argument(
+        "--base-model-revision",
+        type=str,
+        default="main",
+        help="The revision of the base model for PEFT adapters.",
+    )
 
     args = parser.parse_args()
 
@@ -299,6 +309,7 @@ if __name__ == "__main__":
         max_gpu_memory=args.max_gpu_memory,
         dtype=str_to_torch_dtype(args.dtype),
         revision=args.revision,
+        base_model_revision=args.base_model_revision,
     )
 
     reorg_answer_file(answer_file)
