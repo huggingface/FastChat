@@ -353,8 +353,11 @@ def str_to_torch_dtype(dtype: str):
 
 def is_adapter_model(model_name_or_path: str, revision: str = "main") -> bool:
     try:
+        # Try first if model on a Hub repo
         repo_files = list_repo_files(model_name_or_path, revision=revision)
     except HFValidationError:
-        # check local files
+        # If not, check local repo
         repo_files = os.listdir(model_name_or_path)
-    return "adapter_model.bin" in repo_files
+    return (
+        "adapter_model.safetensors" in repo_files or "adapter_model.bin" in repo_files
+    )

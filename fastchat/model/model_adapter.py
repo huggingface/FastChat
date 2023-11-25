@@ -118,8 +118,11 @@ def register_model_adapter(cls):
 
 
 @cache
-def get_model_adapter(model_path: str) -> BaseModelAdapter:
+def get_model_adapter(model_path: str, revision: str = "main") -> BaseModelAdapter:
     """Get a model adapter for a model_path."""
+    if is_adapter_model(model_path, revision=revision) is True:
+        return PeftModelAdapter()
+
     model_path_basename = os.path.basename(os.path.normpath(model_path))
 
     # Try the basename of model_path at first
@@ -174,11 +177,12 @@ def load_model(
     exllama_config: Optional[ExllamaConfig] = None,
     xft_config: Optional[XftConfig] = None,
     revision: str = "main",
+    base_model_revision: str = "main",
     debug: bool = False,
 ):
     """Load a model from Hugging Face."""
     # get model adapter
-    adapter = get_model_adapter(model_path)
+    adapter = get_model_adapter(model_path, revision=revision)
     print(
         f"Using model adapter: {adapter.__class__.__name__} for {model_path=} and {revision=}"
     )
@@ -307,6 +311,9 @@ def load_model(
         model, tokenizer = load_xft_model(model_path, xft_config)
         return model, tokenizer
     kwargs["revision"] = revision
+
+    if is_adapter_model(model_path, revision=revision) is True:
+        kwargs["base_model_revision"] = base_model_revision
 
     if dtype is not None:  # Overwrite dtype if it is provided in the arguments.
         kwargs["torch_dtype"] = dtype
@@ -544,7 +551,7 @@ class PeftModelAdapter:
 
     def match(self, model_path: str):
         """Accepts any model path with "peft" in the name"""
-        if os.path.exists(os.path.join(model_path, "adapter_config.json")):
+        if is_adapter_model(model_path):
             return True
         return "peft" in model_path.lower()
 
@@ -552,7 +559,8 @@ class PeftModelAdapter:
         """Loads the base model then the (peft) adapter weights"""
         from peft import PeftConfig, PeftModel
 
-        config = PeftConfig.from_pretrained(model_path)
+        revision = from_pretrained_kwargs.get("revision", "main")
+        config = PeftConfig.from_pretrained(model_path, revision=revision)
         base_model_path = config.base_model_name_or_path
         if "peft" in base_model_path:
             raise ValueError(
@@ -584,17 +592,21 @@ class PeftModelAdapter:
                 # Super important: make sure we use model_path as the
                 # `adapter_name`.
                 model = PeftModel.from_pretrained(
-                    base_model, model_path, adapter_name=model_path
+                    base_model, model_path, adapter_name=model_path, revision=revision
                 )
                 peft_model_cache[base_model_path] = (model, tokenizer)
             return model, tokenizer
 
         # In the normal case, load up the base model weights again.
         base_adapter = get_model_adapter(base_model_path)
+        from_pretrained_kwargs["revision"] = from_pretrained_kwargs.get(
+            "base_model_revision", "main"
+        )
+        from_pretrained_kwargs.pop("base_model_revision", None)
         base_model, tokenizer = base_adapter.load_model(
             base_model_path, from_pretrained_kwargs
         )
-        model = PeftModel.from_pretrained(base_model, model_path)
+        model = PeftModel.from_pretrained(base_model, model_path, revision=revision)
         return model, tokenizer
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
