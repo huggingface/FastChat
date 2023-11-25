@@ -42,7 +42,7 @@ from fastchat.modules.awq import AWQConfig, load_awq_quantized
 from fastchat.modules.exllama import ExllamaConfig, load_exllama_model
 from fastchat.modules.xfastertransformer import load_xft_model, XftConfig
 from fastchat.modules.gptq import GptqConfig, load_gptq_quantized
-from fastchat.utils import get_gpu_memory
+from fastchat.utils import get_gpu_memory, is_adapter_model
 
 # Check an environment variable to check if we should be sharing Peft model
 # weights.  When false we treat all Peft models as separate.
@@ -179,7 +179,9 @@ def load_model(
     """Load a model from Hugging Face."""
     # get model adapter
     adapter = get_model_adapter(model_path)
-    print(f"Using model adapter: {adapter.__class__.__name__} for {model_path=} and {revision=}")
+    print(
+        f"Using model adapter: {adapter.__class__.__name__} for {model_path=} and {revision=}"
+    )
 
     # Handle device mapping
     cpu_offloading = raise_warning_for_incompatible_cpu_offloading_configuration(
@@ -1930,10 +1932,14 @@ class H4MistralAdapter(BaseModelAdapter):
     """The model adapter for H4 Mistral models"""
 
     def match(self, model_path: str):
-        return "HuggingFaceH4" in model_path and "mistral" in model_path.lower()
+        return "mistral" in model_path.lower()
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         return get_conv_template("zephyr")
+
+
+# Register our adapters first to prioritise over defaults
+register_model_adapter(H4MistralAdapter)
 
 # Note: the registration order matters.
 # The one registered earlier has a higher matching priority.
@@ -2007,10 +2013,6 @@ register_model_adapter(PygmalionAdapter)
 register_model_adapter(MicrosoftOrcaAdapter)
 register_model_adapter(YiAdapter)
 
-#############
-# H4 Adapters
-#############
-register_model_adapter(H4MistralAdapter)
 
 # After all adapters, try the default base adapter.
 register_model_adapter(BaseModelAdapter)

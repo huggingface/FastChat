@@ -10,6 +10,8 @@ import platform
 import sys
 from typing import AsyncGenerator, Generator
 import warnings
+from huggingface_hub import list_repo_files
+from huggingface_hub.utils._validators import HFValidationError
 
 import requests
 
@@ -347,3 +349,12 @@ def str_to_torch_dtype(dtype: str):
         return torch.bfloat16
     else:
         raise ValueError(f"Unrecognized dtype: {dtype}")
+
+
+def is_adapter_model(model_name_or_path: str, revision: str = "main") -> bool:
+    try:
+        repo_files = list_repo_files(model_name_or_path, revision=revision)
+    except HFValidationError:
+        # check local files
+        repo_files = os.listdir(model_name_or_path)
+    return "adapter_model.bin" in repo_files

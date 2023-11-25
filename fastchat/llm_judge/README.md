@@ -98,7 +98,19 @@ run.sh {HUB_MODEL_ID} {MT_BENCH_ID} {HUB_MODEL_REVISION} {DTYPE}
 For example, to evaluate `zephyr-7b-beta` you can run:
 
 ```shell
-run.sh 
+./run.sh HuggingFaceH4/zephyr-7b-beta zephyr-7b-beta 
+```
+
+To evaluate a specific revision, run:
+
+```shell
+./run.sh HuggingFaceH4/mistral-7b-dpo mistral-7b-dpo_v8.2 v8.2
+```
+
+To evaluate a specific revision and dtype (`float16` is the default and recommended for most models), run:
+
+```shell
+./run.sh HuggingFaceH4/mistral-7b-dpo mistral-7b-dpo_v8.2 v8.2 bfloat16
 ```
 
 ### Other grading options
