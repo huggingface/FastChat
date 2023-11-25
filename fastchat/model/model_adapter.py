@@ -599,6 +599,8 @@ class PeftModelAdapter:
 
         # In the normal case, load up the base model weights again.
         base_adapter = get_model_adapter(base_model_path)
+
+        # h4: we override the `revision` arg to point to the revision of the base model instead of the adapter one.
         from_pretrained_kwargs["revision"] = from_pretrained_kwargs.get(
             "base_model_revision", "main"
         )

@@ -109,6 +109,7 @@ def get_model_answers(
         for i in range(num_choices):
             torch.manual_seed(i)
             conv = get_conversation_template(model_path)
+            print(f"Using chat template {conv.name} to generate answers")
             turns = []
             for j in range(len(question["turns"])):
                 qs = question["turns"][j]
