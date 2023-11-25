@@ -234,6 +234,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--question-end", type=int, help="A debug option. The end index of questions."
     )
+    parser.add_argument("--question-file", type=str, help="The input question file.")
     parser.add_argument("--answer-file", type=str, help="The output answer file.")
     parser.add_argument(
         "--max-new-token",
@@ -288,7 +289,10 @@ if __name__ == "__main__":
 
         ray.init()
 
-    question_file = f"data/{args.bench_name}/question.jsonl"
+    if args.question_file:
+        question_file = args.question_file
+    else:
+        question_file = f"data/{args.bench_name}/question.jsonl"
     if args.answer_file:
         answer_file = args.answer_file
     else:
