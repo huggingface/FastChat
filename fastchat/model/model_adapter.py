@@ -52,11 +52,12 @@ peft_share_base_weights = (
 
 def is_adapter_model(model_name_or_path: str, revision: str = "main") -> bool:
     try:
+        # Try first if model on a Hub repo
         repo_files = list_repo_files(model_name_or_path, revision=revision)
     except HFValidationError:
-        # check local files
+        # If not, check local repo
         repo_files = os.listdir(model_name_or_path)
-    return "adapter_model.bin" in repo_files
+    return "adapter_model.safetensors" in repo_files or "adapter_model.bin" in repo_files
 
 
 class BaseModelAdapter:
@@ -177,7 +178,7 @@ def load_model(
     """Load a model from Hugging Face."""
     # get model adapter
     adapter = get_model_adapter(model_path, revision=revision)
-    print(f"Using model adapter: {adapter.__class__.__name__} for model path {model_path} and revision {revision}")
+    print(f"Using model adapter: {adapter.__class__.__name__} for {model_path=} and {revision=}")
 
     # Handle device mapping
     cpu_offloading = raise_warning_for_incompatible_cpu_offloading_configuration(
@@ -541,7 +542,9 @@ class PeftModelAdapter:
             )
         base_model_path = config.base_model_name_or_path
         base_adapter = get_model_adapter(base_model_path)
-        return base_adapter.get_default_conv_template(config.base_model_name_or_path)
+        conv_template = base_adapter.get_default_conv_template(config.base_model_name_or_path)
+        print(f"Using chat template `{conv_template.name}` for {base_model_path=}")
+        return conv_template
 
 
 class VicunaAdapter(BaseModelAdapter):
