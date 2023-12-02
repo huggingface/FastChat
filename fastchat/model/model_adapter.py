@@ -526,11 +526,14 @@ class PeftModelAdapter:
         base_adapter = get_model_adapter(base_model_path)
         base_model_from_pretrained_kwargs = {
             "revision": from_pretrained_kwargs.get("base_model_revision", "main"),
-            "trust_remote_code": from_pretrained_kwargs.get("trust_remote_code", False)
+            "trust_remote_code": from_pretrained_kwargs.get("trust_remote_code", False),
+            "device_map": from_pretrained_kwargs.get("device_map", "auto"),
+            "torch_dtype": from_pretrained_kwargs.get("torch_dtype", torch.float16),
         }
         base_model, tokenizer = base_adapter.load_model(
             base_model_path, base_model_from_pretrained_kwargs, 
         )
+        print(f"Base model loaded on device {base_model.device} for {base_model_path=} and {base_model_from_pretrained_kwargs=}")
         model = PeftModel.from_pretrained(base_model, model_path, revision=revision)
         return model, tokenizer
 
