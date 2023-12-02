@@ -198,6 +198,7 @@ def load_model(
     elif device == "cuda":
         kwargs = {"torch_dtype": torch.float16}
         if num_gpus != 1:
+            print(f"Sharding model across {num_gpus} GPUs")
             kwargs["device_map"] = "auto"
             if max_gpu_memory is None:
                 kwargs[
@@ -306,7 +307,7 @@ def load_model(
     ):
         model = ipex.optimize(model, dtype=kwargs["torch_dtype"])
 
-    if (device == "cuda" and num_gpus >= 1 and not cpu_offloading) or device in (
+    if (device == "cuda" and num_gpus == 1 and not cpu_offloading) or device in (
         "mps",
         "xpu",
     ):
