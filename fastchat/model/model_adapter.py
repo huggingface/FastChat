@@ -318,6 +318,8 @@ def load_model(
     if debug:
         print(model)
 
+    print(f"Model loaded on {model.device=} for {device=} and {num_gpus=}")
+
     return model, tokenizer
 
 
