@@ -306,7 +306,7 @@ def load_model(
     ):
         model = ipex.optimize(model, dtype=kwargs["torch_dtype"])
 
-    if (device == "cuda" and num_gpus == 1 and not cpu_offloading) or device in (
+    if (device == "cuda" and num_gpus >= 1 and not cpu_offloading) or device in (
         "mps",
         "xpu",
     ):
@@ -317,6 +317,8 @@ def load_model(
 
     if debug:
         print(model)
+
+    print(f"Model loaded on {model.device=} for {device=} and {num_gpus=}")
 
     return model, tokenizer
 
