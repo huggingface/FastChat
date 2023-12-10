@@ -1315,6 +1315,21 @@ class H4DeepSeekAdapter(BaseModelAdapter):
     def get_default_conv_template(self, model_path: str) -> Conversation:
         return get_conv_template("h4_default_v3")
 
+class H4MixtralAdapter(BaseModelAdapter):
+    """The model adapter for H4 Mixtral models"""
+
+    def match(self, model_path: str):
+        return "mixtral" in model_path.lower()
+
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        model, tokenizer = super().load_model(model_path, from_pretrained_kwargs)
+        model.config.eos_token_id = tokenizer.eos_token_id
+        model.config.pad_token_id = tokenizer.pad_token_id
+        return model, tokenizer
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        return get_conv_template("h4_default_v3")
+
 
 class CuteGPTAdapter(BaseModelAdapter):
     """The model adapter for llama-2"""
@@ -1702,6 +1717,7 @@ register_model_adapter(ReaLMAdapter)
 register_model_adapter(CodeLlamaAdapter)
 register_model_adapter(MistralAdapter)
 register_model_adapter(H4DeepSeekAdapter)
+register_model_adapter(H4MixtralAdapter)
 
 # After all adapters, try the default base adapter.
 register_model_adapter(BaseModelAdapter)
