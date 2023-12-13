@@ -805,6 +805,19 @@ register_conv_template(
     )
 )
 
+# Default ChatML format
+register_conv_template(
+    Conversation(
+        name="chatml",
+        system_template="<|im_start|>system\n{system_message}",
+        roles=("<|im_start|>user", "<|im_start|>assistant"),
+        sep_style=SeparatorStyle.CHATML,
+        sep="<|im_end|>",
+        stop_token_ids=[32000, 32001],
+        stop_str="<|im_end|>",
+    )
+)
+
 # Baichuan-13B-Chat template
 register_conv_template(
     # source: https://huggingface.co/baichuan-inc/Baichuan-13B-Chat/blob/19ef51ba5bad8935b03acd20ff04a269210983bc/modeling_baichuan.py#L555
