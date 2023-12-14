@@ -100,7 +100,7 @@ class BaseModelAdapter:
             revision=revision,
         )
 
-    def get_default_conv_template(self, model_path: str) -> Conversation:
+    def get_default_conv_template(self, model_path: str, revision: str = "main") -> Conversation:
         return get_conv_template("one_shot")
 
 
@@ -324,10 +324,10 @@ def load_model(
     return model, tokenizer
 
 
-def get_conversation_template(model_path: str) -> Conversation:
+def get_conversation_template(model_path: str, revision: str = "main") -> Conversation:
     """Get the default conversation template."""
     adapter = get_model_adapter(model_path)
-    return adapter.get_default_conv_template(model_path)
+    return adapter.get_default_conv_template(model_path, revision=revision)
 
 
 def get_generate_stream_function(model: torch.nn.Module, model_path: str):
@@ -1282,12 +1282,13 @@ class Llama2Adapter(BaseModelAdapter):
         model.config.pad_token_id = tokenizer.pad_token_id
         return model, tokenizer
 
-    def get_default_conv_template(self, model_path: str) -> Conversation:
-        tokenizer = AutoTokenizer.from_pretrained(model_path)
-        if "<|im_start|>" in tokenizer.chat_template:
-            return get_conv_template("chatml")
-        else:
+    def get_default_conv_template(self, model_path: str, revision: str) -> Conversation:
+        tokenizer = AutoTokenizer.from_pretrained(model_path, revision=revision)
+        # Legacy models did not have a chat template, so we default to the H4 template.
+        if tokenizer.chat_template is None or "<|im_start|>" not in tokenizer.chat_template:
             return get_conv_template("h4_default_v3")
+        else:
+            return get_conv_template("chatml")
 
 class MistralAdapter(BaseModelAdapter):
     """The model adapter for mistral"""
@@ -1301,12 +1302,13 @@ class MistralAdapter(BaseModelAdapter):
         model.config.pad_token_id = tokenizer.pad_token_id
         return model, tokenizer
 
-    def get_default_conv_template(self, model_path: str) -> Conversation:
-        tokenizer = AutoTokenizer.from_pretrained(model_path)
-        if "<|im_start|>" in tokenizer.chat_template:
-            return get_conv_template("chatml")
-        else:
+    def get_default_conv_template(self, model_path: str, revision: str) -> Conversation:
+        tokenizer = AutoTokenizer.from_pretrained(model_path, revision=revision)
+        # Legacy models did not have a chat template, so we default to the H4 template.
+        if tokenizer.chat_template is None or "<|im_start|>" not in tokenizer.chat_template:
             return get_conv_template("h4_default_v3")
+        else:
+            return get_conv_template("chatml")
 
 class H4DeepSeekAdapter(BaseModelAdapter):
     """The model adapter for H4 DeepSeek models"""
@@ -1320,12 +1322,13 @@ class H4DeepSeekAdapter(BaseModelAdapter):
         model.config.pad_token_id = tokenizer.pad_token_id
         return model, tokenizer
 
-    def get_default_conv_template(self, model_path: str) -> Conversation:
-        tokenizer = AutoTokenizer.from_pretrained(model_path)
-        if "<|im_start|>" in tokenizer.chat_template:
-            return get_conv_template("chatml")
-        else:
+    def get_default_conv_template(self, model_path: str, revision: str) -> Conversation:
+        tokenizer = AutoTokenizer.from_pretrained(model_path, revision=revision)
+        # Legacy models did not have a chat template, so we default to the H4 template.
+        if tokenizer.chat_template is None or "<|im_start|>" not in tokenizer.chat_template:
             return get_conv_template("h4_default_v3")
+        else:
+            return get_conv_template("chatml")
 
 class H4MixtralAdapter(BaseModelAdapter):
     """The model adapter for H4 Mixtral models"""
@@ -1339,12 +1342,13 @@ class H4MixtralAdapter(BaseModelAdapter):
         model.config.pad_token_id = tokenizer.pad_token_id
         return model, tokenizer
 
-    def get_default_conv_template(self, model_path: str) -> Conversation:
-        tokenizer = AutoTokenizer.from_pretrained(model_path)
-        if "<|im_start|>" in tokenizer.chat_template:
-            return get_conv_template("chatml")
-        else:
+    def get_default_conv_template(self, model_path: str, revision: str) -> Conversation:
+        tokenizer = AutoTokenizer.from_pretrained(model_path, revision=revision)
+        # Legacy models did not have a chat template, so we default to the H4 template.
+        if tokenizer.chat_template is None or "<|im_start|>" not in tokenizer.chat_template:
             return get_conv_template("h4_default_v3")
+        else:
+            return get_conv_template("chatml")
 
 
 class CuteGPTAdapter(BaseModelAdapter):
