@@ -1302,7 +1302,9 @@ class MistralAdapter(BaseModelAdapter):
         return model, tokenizer
 
     def get_default_conv_template(self, model_path: str, revision: str) -> Conversation:
+        print(f"Loading tokenizer for {model_path=} and {revision=}")
         tokenizer = AutoTokenizer.from_pretrained(model_path, revision=revision)
+        print(f"Chat template: {tokenizer.chat_template}")
         if "<|im_start|>" in tokenizer.chat_template:
             return get_conv_template("chatml")
         else:
