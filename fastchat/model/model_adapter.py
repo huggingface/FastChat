@@ -1284,10 +1284,11 @@ class Llama2Adapter(BaseModelAdapter):
 
     def get_default_conv_template(self, model_path: str, revision: str) -> Conversation:
         tokenizer = AutoTokenizer.from_pretrained(model_path, revision=revision)
-        if "<|im_start|>" in tokenizer.chat_template:
-            return get_conv_template("chatml")
-        else:
+        # Legacy models did not have a chat template, so we default to the H4 template.
+        if tokenizer.chat_template is None or "<|im_start|>" not in tokenizer.chat_template:
             return get_conv_template("h4_default_v3")
+        else:
+            return get_conv_template("chatml")
 
 class MistralAdapter(BaseModelAdapter):
     """The model adapter for mistral"""
@@ -1323,10 +1324,11 @@ class H4DeepSeekAdapter(BaseModelAdapter):
 
     def get_default_conv_template(self, model_path: str, revision: str) -> Conversation:
         tokenizer = AutoTokenizer.from_pretrained(model_path, revision=revision)
-        if "<|im_start|>" in tokenizer.chat_template:
-            return get_conv_template("chatml")
-        else:
+        # Legacy models did not have a chat template, so we default to the H4 template.
+        if tokenizer.chat_template is None or "<|im_start|>" not in tokenizer.chat_template:
             return get_conv_template("h4_default_v3")
+        else:
+            return get_conv_template("chatml")
 
 class H4MixtralAdapter(BaseModelAdapter):
     """The model adapter for H4 Mixtral models"""
@@ -1342,10 +1344,11 @@ class H4MixtralAdapter(BaseModelAdapter):
 
     def get_default_conv_template(self, model_path: str, revision: str) -> Conversation:
         tokenizer = AutoTokenizer.from_pretrained(model_path, revision=revision)
-        if "<|im_start|>" in tokenizer.chat_template:
-            return get_conv_template("chatml")
-        else:
+        # Legacy models did not have a chat template, so we default to the H4 template.
+        if tokenizer.chat_template is None or "<|im_start|>" not in tokenizer.chat_template:
             return get_conv_template("h4_default_v3")
+        else:
+            return get_conv_template("chatml")
 
 
 class CuteGPTAdapter(BaseModelAdapter):
