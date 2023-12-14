@@ -923,7 +923,7 @@ class ChatGPTAdapter(BaseModelAdapter):
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         raise NotImplementedError()
 
-    def get_default_conv_template(self, model_path: str) -> Conversation:
+    def get_default_conv_template(self, model_path: str, revision: str = "main") -> Conversation:
         return get_conv_template("chatgpt")
 
 
