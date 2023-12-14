@@ -100,7 +100,7 @@ class BaseModelAdapter:
             revision=revision,
         )
 
-    def get_default_conv_template(self, model_path: str) -> Conversation:
+    def get_default_conv_template(self, model_path: str, revision: str = "main") -> Conversation:
         return get_conv_template("one_shot")
 
 
@@ -324,10 +324,10 @@ def load_model(
     return model, tokenizer
 
 
-def get_conversation_template(model_path: str) -> Conversation:
+def get_conversation_template(model_path: str, revision: str = "main") -> Conversation:
     """Get the default conversation template."""
     adapter = get_model_adapter(model_path)
-    return adapter.get_default_conv_template(model_path)
+    return adapter.get_default_conv_template(model_path, revision=revision)
 
 
 def get_generate_stream_function(model: torch.nn.Module, model_path: str):
@@ -1282,8 +1282,8 @@ class Llama2Adapter(BaseModelAdapter):
         model.config.pad_token_id = tokenizer.pad_token_id
         return model, tokenizer
 
-    def get_default_conv_template(self, model_path: str) -> Conversation:
-        tokenizer = AutoTokenizer.from_pretrained(model_path)
+    def get_default_conv_template(self, model_path: str, revision: str) -> Conversation:
+        tokenizer = AutoTokenizer.from_pretrained(model_path, revision=revision)
         if "<|im_start|>" in tokenizer.chat_template:
             return get_conv_template("chatml")
         else:
@@ -1301,8 +1301,8 @@ class MistralAdapter(BaseModelAdapter):
         model.config.pad_token_id = tokenizer.pad_token_id
         return model, tokenizer
 
-    def get_default_conv_template(self, model_path: str) -> Conversation:
-        tokenizer = AutoTokenizer.from_pretrained(model_path)
+    def get_default_conv_template(self, model_path: str, revision: str) -> Conversation:
+        tokenizer = AutoTokenizer.from_pretrained(model_path, revision=revision)
         if "<|im_start|>" in tokenizer.chat_template:
             return get_conv_template("chatml")
         else:
@@ -1320,8 +1320,8 @@ class H4DeepSeekAdapter(BaseModelAdapter):
         model.config.pad_token_id = tokenizer.pad_token_id
         return model, tokenizer
 
-    def get_default_conv_template(self, model_path: str) -> Conversation:
-        tokenizer = AutoTokenizer.from_pretrained(model_path)
+    def get_default_conv_template(self, model_path: str, revision: str) -> Conversation:
+        tokenizer = AutoTokenizer.from_pretrained(model_path, revision=revision)
         if "<|im_start|>" in tokenizer.chat_template:
             return get_conv_template("chatml")
         else:
@@ -1339,8 +1339,8 @@ class H4MixtralAdapter(BaseModelAdapter):
         model.config.pad_token_id = tokenizer.pad_token_id
         return model, tokenizer
 
-    def get_default_conv_template(self, model_path: str) -> Conversation:
-        tokenizer = AutoTokenizer.from_pretrained(model_path)
+    def get_default_conv_template(self, model_path: str, revision: str) -> Conversation:
+        tokenizer = AutoTokenizer.from_pretrained(model_path, revision=revision)
         if "<|im_start|>" in tokenizer.chat_template:
             return get_conv_template("chatml")
         else:
