@@ -1728,7 +1728,7 @@ class Hermes2Adapter(BaseModelAdapter):
         ).eval()
         return model, tokenizer
 
-    def get_default_conv_template(self, model_path: str) -> Conversation:
+    def get_default_conv_template(self, model_path: str, revision: str) -> Conversation:
         return get_conv_template("OpenHermes-2.5-Mistral-7B")
 
 
