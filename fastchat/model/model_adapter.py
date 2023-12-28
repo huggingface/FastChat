@@ -1705,6 +1705,32 @@ class CodeLlamaAdapter(BaseModelAdapter):
     def get_default_conv_template(self, model_path: str) -> Conversation:
         return get_conv_template("llama-2")
 
+class Hermes2Adapter(BaseModelAdapter):
+    """Model adapter for teknium/OpenHermes-2.5-Mistral-7B and teknium/OpenHermes-2-Mistral-7B models"""
+
+    use_fast_tokenizer = False
+
+    def match(self, model_path: str):
+        return any(
+            model_str in model_path.lower()
+            for model_str in ["openhermes-2.5-mistral-7b", "openhermes-2-mistral-7b"]
+        )
+
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        revision = from_pretrained_kwargs.get("revision", "main")
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_path, use_fast=self.use_fast_tokenizer, revision=revision
+        )
+        model = AutoModelForCausalLM.from_pretrained(
+            model_path,
+            low_cpu_mem_usage=True,
+            **from_pretrained_kwargs,
+        ).eval()
+        return model, tokenizer
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        return get_conv_template("OpenHermes-2.5-Mistral-7B")
+
 
 # Note: the registration order matters.
 # The one registered earlier has a higher matching priority.
@@ -1763,6 +1789,7 @@ register_model_adapter(VigogneChatAdapter)
 register_model_adapter(OpenLLaMaOpenInstructAdapter)
 register_model_adapter(ReaLMAdapter)
 register_model_adapter(CodeLlamaAdapter)
+register_model_adapter(Hermes2Adapter)
 register_model_adapter(MistralAdapter)
 register_model_adapter(H4DeepSeekAdapter)
 register_model_adapter(H4MixtralAdapter)
