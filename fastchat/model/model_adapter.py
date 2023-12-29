@@ -118,6 +118,7 @@ def register_model_adapter(cls):
 def get_model_adapter(model_path: str, revision: str = "main") -> BaseModelAdapter:
     """Get a model adapter for a model_path."""
     if model_path not in ["gpt-4", "gpt-3.5-turbo", "claude-2", "claude-instant-1"] and is_adapter_model(model_path, revision=revision):
+        print(f"Adapter weights detected! Using PeftModelAdapter for {model_path=} and {revision=}")
         return PeftModelAdapter()
     
     model_path_basename = os.path.basename(os.path.normpath(model_path))
