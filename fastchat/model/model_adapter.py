@@ -537,18 +537,18 @@ class PeftModelAdapter:
         model = PeftModel.from_pretrained(base_model, model_path, revision=revision)
         return model, tokenizer
 
-    def get_default_conv_template(self, model_path: str) -> Conversation:
+    def get_default_conv_template(self, model_path: str, revision: str = "main") -> Conversation:
         """Uses the conv template of the base model"""
         from peft import PeftConfig, PeftModel
 
-        config = PeftConfig.from_pretrained(model_path)
+        config = PeftConfig.from_pretrained(model_path, revision=revision)
         if "peft" in config.base_model_name_or_path:
             raise ValueError(
                 f"PeftModelAdapter cannot load a base model with 'peft' in the name: {config.base_model_name_or_path}"
             )
         base_model_path = config.base_model_name_or_path
-        base_adapter = get_model_adapter(base_model_path)
-        conv_template = base_adapter.get_default_conv_template(config.base_model_name_or_path)
+        base_adapter = get_model_adapter(base_model_path, revision=revision)
+        conv_template = base_adapter.get_default_conv_template(config.base_model_name_or_path, revision=revision)
         print(f"Using chat template `{conv_template.name}` for {base_model_path=}")
         return conv_template
 
