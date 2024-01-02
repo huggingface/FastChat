@@ -540,6 +540,11 @@ class PeftModelAdapter:
         base_model, tokenizer = base_adapter.load_model(
             base_model_path, base_model_from_pretrained_kwargs, 
         )
+        # If the base model is also a LoRA adapter, we need to merge those weights **before** loading the second adapter
+        # Without this, you will get garbage outputs!
+        if is_adapter_model(base_model_path, base_model_from_pretrained_kwargs["revision"]) is True:
+            print("Base model is adapter, merging LoRA weights")
+            base_model.merge_and_unload()
         print(f"Base model loaded on device {base_model.device} for {base_model_path=} and {base_model_from_pretrained_kwargs=}")
         model = PeftModel.from_pretrained(base_model, model_path, revision=revision)
         return model, tokenizer
