@@ -544,7 +544,8 @@ class PeftModelAdapter:
         # Without this, you will get garbage outputs!
         if is_adapter_model(base_model_path, base_model_from_pretrained_kwargs["revision"]) is True:
             print("Base model is adapter, merging LoRA weights")
-            base_model.merge_and_unload()
+            base_model.eval()
+            base_model = base_model.merge_and_unload()
         print(f"Base model loaded on device {base_model.device} for {base_model_path=} and {base_model_from_pretrained_kwargs=}")
         model = PeftModel.from_pretrained(base_model, model_path, revision=revision)
         return model, tokenizer
