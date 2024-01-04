@@ -1331,6 +1331,26 @@ class MistralAdapter(BaseModelAdapter):
         else:
             return get_conv_template("chatml")
 
+class ZephyrAdapter(BaseModelAdapter):
+    """The model adapter for mistral"""
+
+    def match(self, model_path: str):
+        return "zephyr" in model_path.lower()
+
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        model, tokenizer = super().load_model(model_path, from_pretrained_kwargs)
+        model.config.eos_token_id = tokenizer.eos_token_id
+        model.config.pad_token_id = tokenizer.pad_token_id
+        return model, tokenizer
+
+    def get_default_conv_template(self, model_path: str, revision: str) -> Conversation:
+        tokenizer = AutoTokenizer.from_pretrained(model_path, revision=revision)
+        # Legacy models did not have a chat template, so we default to the H4 template.
+        if tokenizer.chat_template is None or "<|im_start|>" not in tokenizer.chat_template:
+            return get_conv_template("h4_default_v3")
+        else:
+            return get_conv_template("chatml")
+
 class H4DeepSeekAdapter(BaseModelAdapter):
     """The model adapter for H4 DeepSeek models"""
 
@@ -1807,6 +1827,7 @@ register_model_adapter(MistralAdapter)
 register_model_adapter(H4DeepSeekAdapter)
 register_model_adapter(H4MixtralAdapter)
 register_model_adapter(H4PhiAdapter)
+register_model_adapter(ZephyrAdapter)
 
 # After all adapters, try the default base adapter.
 register_model_adapter(BaseModelAdapter)
