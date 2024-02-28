@@ -959,6 +959,16 @@ register_conv_template(
     )
 )
 
+register_conv_template(
+    Conversation(
+        name="gemma_chatml",
+        system_template="<bos><|im_start|>system\n{system_message}",
+        roles=("<|im_start|>user", "<|im_start|>assistant"),
+        sep_style=SeparatorStyle.CHATML,
+        sep="<|im_end|>",
+        stop_str="<|im_end|>",
+    )
+)
 
 if __name__ == "__main__":
     print("Vicuna template:")

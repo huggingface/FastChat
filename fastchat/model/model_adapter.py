@@ -1351,6 +1351,15 @@ class ZephyrAdapter(BaseModelAdapter):
         else:
             return get_conv_template("chatml")
 
+class GemmaChatMLAdapter(BaseModelAdapter):
+    """The model adapter for Gemma"""
+
+    def match(self, model_path: str):
+        return "gemma-chatml" in model_path.lower()
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        return get_conv_template("gemma_chatml")
+
 class H4DeepSeekAdapter(BaseModelAdapter):
     """The model adapter for H4 DeepSeek models"""
 
@@ -1849,6 +1858,7 @@ register_model_adapter(H4MixtralAdapter)
 register_model_adapter(H4PhiAdapter)
 register_model_adapter(ZephyrAdapter)
 register_model_adapter(H4Qwen2Adapter)
+register_model_adapter(GemmaChatMLAdapter)
 
 # After all adapters, try the default base adapter.
 register_model_adapter(BaseModelAdapter)
