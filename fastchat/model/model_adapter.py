@@ -1290,6 +1290,17 @@ class StarChatAdapter(BaseModelAdapter):
     def get_default_conv_template(self, model_path: str) -> Conversation:
         return get_conv_template("starchat")
 
+class StarChat2Adapter(BaseModelAdapter):
+    """The model adapter for HuggingFaceH4/starchat2-v0.1"""
+
+    def match(self, model_path: str):
+        return any(
+            model_str in model_path.lower()
+            for model_str in ["starchat2", "starcoder2"]
+        )
+
+    def get_default_conv_template(self, model_path: str, revision: str) -> Conversation:
+        return get_conv_template("chatml")
 
 class Llama2Adapter(BaseModelAdapter):
     """The model adapter for llama-2"""
@@ -1346,7 +1357,9 @@ class ZephyrAdapter(BaseModelAdapter):
     def get_default_conv_template(self, model_path: str, revision: str) -> Conversation:
         tokenizer = AutoTokenizer.from_pretrained(model_path, revision=revision)
         # Legacy models did not have a chat template, so we default to the H4 template.
-        if tokenizer.chat_template is None or "<|im_start|>" not in tokenizer.chat_template:
+        if "gemma" in model_path.lower():
+            return get_conv_template("gemma")
+        elif tokenizer.chat_template is None or "<|im_start|>" not in tokenizer.chat_template:
             return get_conv_template("h4_default_v3")
         else:
             return get_conv_template("chatml")
@@ -1843,6 +1856,7 @@ register_model_adapter(NousHermesAdapter)
 register_model_adapter(PythiaAdapter)
 register_model_adapter(InternLMChatAdapter)
 register_model_adapter(StarChatAdapter)
+register_model_adapter(StarChat2Adapter)
 register_model_adapter(Llama2Adapter)
 register_model_adapter(CuteGPTAdapter)
 register_model_adapter(OpenOrcaAdapter)
