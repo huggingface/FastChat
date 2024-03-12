@@ -1783,7 +1783,7 @@ class CodeLlamaAdapter(BaseModelAdapter):
         model.config.pad_token_id = tokenizer.pad_token_id
         return model, tokenizer
 
-    def get_default_conv_template(self, model_path: str) -> Conversation:
+    def get_default_conv_template(self, model_path: str, revision: str) -> Conversation:
         return get_conv_template("llama-2")
 
 class Hermes2Adapter(BaseModelAdapter):
@@ -1811,6 +1811,16 @@ class Hermes2Adapter(BaseModelAdapter):
 
     def get_default_conv_template(self, model_path: str, revision: str) -> Conversation:
         return get_conv_template("OpenHermes-2.5-Mistral-7B")
+
+class DeepseekCoderAdapter(BaseModelAdapter):
+    """The model adapter for deepseek-ai's coder models"""
+
+    def match(self, model_path: str):
+        return "deepseek-coder" in model_path.lower()
+
+    def get_default_conv_template(self, model_path: str, revision: str) -> Conversation:
+        return get_conv_template("deepseek-coder")
+
 
 
 # Note: the registration order matters.
@@ -1879,6 +1889,7 @@ register_model_adapter(H4PhiAdapter)
 register_model_adapter(ZephyrAdapter)
 register_model_adapter(H4Qwen2Adapter)
 register_model_adapter(H4GemmaAdapter)
+register_model_adapter(DeepseekCoderAdapter)
 
 # After all adapters, try the default base adapter.
 register_model_adapter(BaseModelAdapter)
