@@ -1285,9 +1285,9 @@ class StarChatAdapter(BaseModelAdapter):
     """The model adapter for HuggingFaceH4/starchat-beta"""
 
     def match(self, model_path: str):
-        return "starchat" in model_path.lower()
+        return "starchat" in model_path.lower() and "starchat2" not in model_path.lower()
 
-    def get_default_conv_template(self, model_path: str) -> Conversation:
+    def get_default_conv_template(self, model_path: str, revision: str) -> Conversation:
         return get_conv_template("starchat")
 
 class StarChat2Adapter(BaseModelAdapter):
@@ -1821,7 +1821,29 @@ class DeepseekCoderAdapter(BaseModelAdapter):
     def get_default_conv_template(self, model_path: str, revision: str) -> Conversation:
         return get_conv_template("deepseek-coder")
 
+class DBRXAdapter(BaseModelAdapter):
+    """The model adapter for DBRX models"""
 
+    def match(self, model_path: str):
+        model_path = model_path.lower()
+        return "dbrx" in model_path and not "HuggingFaceH4" in model_path
+
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        revision = from_pretrained_kwargs.get("revision", "main")
+        model = AutoModelForCausalLM.from_pretrained(
+            model_path,
+            trust_remote_code=True,
+            **from_pretrained_kwargs,
+        )
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_path, trust_remote_code=True, revision=revision
+        )
+        model.config.eos_token_id = tokenizer.eos_token_id
+        model.config.pad_token_id = tokenizer.pad_token_id
+        return model, tokenizer
+
+    def get_default_conv_template(self, model_path: str, revision: str) -> Conversation:
+        return get_conv_template("dbrx")
 
 # Note: the registration order matters.
 # The one registered earlier has a higher matching priority.
@@ -1890,6 +1912,7 @@ register_model_adapter(ZephyrAdapter)
 register_model_adapter(H4Qwen2Adapter)
 register_model_adapter(H4GemmaAdapter)
 register_model_adapter(DeepseekCoderAdapter)
+register_model_adapter(DBRXAdapter)
 
 # After all adapters, try the default base adapter.
 register_model_adapter(BaseModelAdapter)
