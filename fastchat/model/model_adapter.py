@@ -1832,7 +1832,6 @@ class DBRXAdapter(BaseModelAdapter):
         revision = from_pretrained_kwargs.get("revision", "main")
         model = AutoModelForCausalLM.from_pretrained(
             model_path,
-            trust_remote_code=True,
             **from_pretrained_kwargs,
         )
         tokenizer = AutoTokenizer.from_pretrained(
