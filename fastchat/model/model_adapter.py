@@ -1326,7 +1326,7 @@ class MistralAdapter(BaseModelAdapter):
     """The model adapter for mistral"""
 
     def match(self, model_path: str):
-        return "mistral" in model_path.lower()
+        return "mistral" in model_path.lower() and "HuggingFaceH4" not in model_path
 
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         model, tokenizer = super().load_model(model_path, from_pretrained_kwargs)
@@ -1443,7 +1443,7 @@ class H4Qwen2Adapter(BaseModelAdapter):
     """The model adapter for H4 Qwen2 models"""
 
     def match(self, model_path: str):
-        return "qwen" in model_path.lower()
+        return "qwen" in model_path.lower() and "HuggingFaceH4" in model_path.lower()
 
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         model, tokenizer = super().load_model(model_path, from_pretrained_kwargs)
@@ -1459,6 +1459,20 @@ class H4Qwen2Adapter(BaseModelAdapter):
         else:
             return get_conv_template("chatml")
 
+class OrpoQwenAdapter(BaseModelAdapter):
+    """The model adapter for Orpo Qwen2 models"""
+
+    def match(self, model_path: str):
+        return "qwen" in model_path.lower() and "orpo-explorers" in model_path.lower()
+
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        model, tokenizer = super().load_model(model_path, from_pretrained_kwargs)
+        model.config.eos_token_id = tokenizer.eos_token_id
+        model.config.pad_token_id = tokenizer.pad_token_id
+        return model, tokenizer
+
+    def get_default_conv_template(self, model_path: str, revision: str) -> Conversation:
+        return get_conv_template("orpo-qwen")
 
 class CuteGPTAdapter(BaseModelAdapter):
     """The model adapter for llama-2"""
@@ -1912,6 +1926,7 @@ register_model_adapter(H4Qwen2Adapter)
 register_model_adapter(H4GemmaAdapter)
 register_model_adapter(DeepseekCoderAdapter)
 register_model_adapter(DBRXAdapter)
+register_model_adapter(OrpoQwenAdapter)
 
 # After all adapters, try the default base adapter.
 register_model_adapter(BaseModelAdapter)

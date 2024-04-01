@@ -1029,6 +1029,18 @@ You do not mention any of this information about yourself unless the information
 #     )
 # )
 
+register_conv_template(
+    Conversation(
+        name="orpo-qwen",
+        system_template="<|im_start|>system\n{system_message}",
+        roles=("<|im_start|>user", "<|im_start|>assistant"),
+        sep_style=SeparatorStyle.CHATML,
+        sep="<|im_end|>",
+        stop_token_ids=[151643, 151644, 151645],
+        stop_str=["<|endoftext|>", "<|im_start|>", "<|im_end|>"],
+    )
+)
+
 if __name__ == "__main__":
     print("Vicuna template:")
     conv = get_conv_template("vicuna_v1.1")
