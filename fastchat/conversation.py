@@ -1032,7 +1032,6 @@ You do not mention any of this information about yourself unless the information
 register_conv_template(
     Conversation(
         name="orpo-qwen",
-        system_template="<|im_start|>system\n{system_message}",
         roles=("<|im_start|>user", "<|im_start|>assistant"),
         sep_style=SeparatorStyle.CHATML,
         sep="<|im_end|>",
