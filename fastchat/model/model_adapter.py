@@ -1062,7 +1062,7 @@ class WizardLMAdapter(BaseModelAdapter):
     def match(self, model_path: str):
         return "wizardlm" in model_path.lower()
 
-    def get_default_conv_template(self, model_path: str) -> Conversation:
+    def get_default_conv_template(self, model_path: str, revision: str) -> Conversation:
         model_path = model_path.lower()
         if "13b" in model_path or "30b" in model_path or "70b" in model_path:
             return get_conv_template("vicuna_v1.1")
